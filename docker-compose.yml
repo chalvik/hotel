@@ -1,0 +1,77 @@
+version: '1'
+
+services:
+  nginx:
+    container_name: ug_hotels_nginx
+    env_file:
+      - ./app/.env
+    build: ./docker/nginx
+    ports:
+      - "844:80"
+      - "433:443"
+#    environment:
+#      - PHP_IDE_CONFIG=servername==${XDEBUG_STORM_SERVER_NAME}
+    volumes:
+      - ./docker/nginx/config:/etc/nginx/conf.d
+      - ./app:/var/www/app
+      - ./docker/nginx/logs:/var/log/nginx
+      # Re-use local composer cache via host-volume
+      - ~/.composer-docker/cache:/root/.composer/cache:delegated
+#    networks:
+#      - ergonovanet
+    depends_on:
+      - php-fpm
+      - mariadb
+
+  php-fpm:
+    container_name: ug_hotels_app
+    env_file:
+      - ./app/.env
+    build: ./docker/php-fpm
+    volumes:
+      - ./app:/var/www/app
+#    networks:
+#      - ergonovanet
+#    environment:
+#      XDEBUG_CONFIG: "remote_host=${REMOTE_HOST} remote_enable=1 remote_port=9003"
+#      PHP_IDE_CONFIG: serverName=${XDEBUG_STORM_SERVER_NAME}
+    depends_on:
+      - mariadb
+
+  mariadb:
+    container_name: ug_hotels_mysql
+    env_file:
+      - ./app/.env
+    #image: arm64v8/mariadb
+    image: mariadb:latest
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    ports:
+      - '3380:3306'
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: ug_hotels_db
+      MARIADB_USER: ug_hotels_user
+      MARIADB_PASSWORD: password
+#      MARIADB_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+#      MARIADB_DATABASE: "${DB_DATABASE}"
+#      MARIADB_USER: "${DB_USERNAME}"
+#      MARIADB_PASSWORD: "${DB_PASSWORD}"
+    volumes:
+#      - ./docker/mariadb/dump:/var/dumps
+#      - ./docker/mariadb/init:/docker-entrypoint-initdb.d
+#      - ./docker/mariadb/conf:/etc/mysql/conf.d
+#      - ./docker/mariadb/logs:/var/log/mysql
+      - mariadb:/var/lib/mysql
+
+  node:
+    build: ./docker/node
+    container_name: ug_hotels_node
+    volumes:
+      - ./app:/var/www/app
+    env_file:
+      - ./app/.env
+
+volumes:
+  mariadb:
+    driver: "local"

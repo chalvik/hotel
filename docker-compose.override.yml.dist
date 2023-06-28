@@ -1,0 +1,10 @@
+version: "1"
+
+services:
+  mariadb:
+    container_name: ug_hotels_mysql
+    image: arm64v8/mariadb
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    ports:
+      - '3334:3306'
